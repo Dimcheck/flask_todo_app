@@ -1,9 +1,14 @@
 import csv
 import io
 import typing as t
+import declxml
 
-from flask import (Blueprint, Response, flash, redirect, render_template,
-                   request, url_for)
+from flask import (
+    Blueprint, Response, flash,
+    redirect, render_template,
+    request, url_for
+)
+
 from flask.views import MethodView
 from flask_login import current_user, login_required
 
@@ -61,6 +66,42 @@ class DeleteProfileTodo(MethodView):
         return redirect(url_for('main.show_profile'))
 
 
+class ExportProfileTodoXML(MethodView):
+    decorators: t.List[t.Callable] = [login_required]
+    methods: t.Optional[t.List[str]] = ['GET']
+
+    def get(self):
+        current_todo = User.query.filter_by(id=current_user.id).first()
+        schema_todo = UserSchema(many=False)
+        output: dict = schema_todo.dump(current_todo)
+        user_info = output['name']
+
+        todos_processor = declxml.dictionary(
+            'User',
+            [
+                declxml.array(declxml.dictionary(
+                    'Todos',
+                    [
+                        declxml.string('content'),
+                        declxml.boolean('is_done'),
+                    ]
+                ),
+                    nested='todos'
+                ),
+                declxml.string('.', attribute='name'),
+            ]
+        )
+
+        result = declxml.serialize_to_string(todos_processor, output, indent='  ')
+
+        return Response(
+            result,
+            mimetype="text/xml",
+            headers={"Content-disposition":
+                     f"attachment; filename={user_info}_todos.xml"}
+        )
+
+
 class ExportProfileTodo(MethodView):
     decorators: t.List[t.Callable] = [login_required]
     methods: t.Optional[t.List[str]] = ['GET']
@@ -92,6 +133,8 @@ profile_view = ShowProfile.as_view('show_profile')
 profile_update = UpdateProfileTodo.as_view('update_profile')
 profile_delete = DeleteProfileTodo.as_view('delete_profile')
 profile_download = ExportProfileTodo.as_view('export_profile')
+profile_download_xml = ExportProfileTodoXML.as_view('export_profile_xml')
+
 
 main.add_url_rule('/', view_func=ShowIndex.as_view('show_index'))
 main.add_url_rule('/profile', view_func=profile_view)
@@ -99,3 +142,4 @@ main.add_url_rule('/profile', view_func=profile_view)
 main.add_url_rule('/profile/update/<int:todo_id>', view_func=profile_update)
 main.add_url_rule('/profile/delete/<int:todo_id>', view_func=profile_delete)
 main.add_url_rule('/profile/export', view_func=profile_download)
+main.add_url_rule('/profile/export_xml', view_func=profile_download_xml)

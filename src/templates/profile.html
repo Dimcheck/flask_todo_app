@@ -25,6 +25,7 @@
     <br>
     <button class="add button is-primary is-warning" type="submit"><a>Create</a></button>
     <button class="add button is-primary is-warning" type="submit"><a href="/profile/export">Export</a></button>
+    <button class="add button is-primary is-warning" type="submit"><a href="/profile/export_xml">ExportXML</a></button>
   </div>
   <br>
 </form>
@@ -39,7 +40,7 @@
   {% else %}
   <button class="todo button is-primary " type="submit"><a class="content">{{ todo.content }} (Done);</a></button>
   <span class="no"><a class="delete is-medium" href="/profile/delete/{{ todo.id }}"></a></span>
-    
+
   {% endif %}
 </form>
 
@@ -49,7 +50,7 @@
   }
   button.todo {
     margin-top: 3px;
-  }  
+  }
   a.content {
     font-size: 17px;
   }
